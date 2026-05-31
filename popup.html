@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>Salesforce Env Guard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+    /* ── Reset & Base ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Light theme (default) ──────────────────────────── */
+    :root, :root[data-theme="light"] {
+      --bg0:        #ffffff;
+      --bg1:        #f6f8fa;
+      --bg2:        #eaeef2;
+      --bg3:        #d0d7de;
+      --border:     #d0d7de;
+      --border2:    #afb8c1;
+      --text0:      #1f2328;
+      --text1:      #24292f;
+      --text2:      #57606a;
+      --text3:      #8c959f;
+      --accent:     #0969da;
+      --accent-bg:  #0969da15;
+      --green:      #1a7f37;
+      --red:        #cf222e;
+      --yellow:     #9a6700;
+      --spinner-bg: #0969da44;
+      --detect-btn-bg: linear-gradient(135deg, #ddf4ff, #d0ebff);
+      --warning-bg: #9a670010;
+      --warning-border: #9a670040;
+      /* env chip */
+      --chip-prod-bg:   #cf222e18; --chip-prod-text:   #cf222e;
+      --chip-sand-bg:   #bf870018; --chip-sand-text:   #9a6700;
+      --chip-dev-bg:    #1a7f3718; --chip-dev-text:    #1a7f37;
+      --chip-uat-bg:    #6b4ce618; --chip-uat-text:    #6b4ce6;
+      --chip-custom-bg: #0550ae18; --chip-custom-text: #0550ae;
+      /* detect badge */
+      --badge-prod-bg:      #cf222e10; --badge-prod-border:  #cf222e; --badge-prod-shadow: #cf222e22; --badge-prod-label: #cf222e;
+      --badge-sand-bg:      #bf870010; --badge-sand-border:  #bf8700; --badge-sand-shadow: #bf870022; --badge-sand-label: #9a6700;
+      --badge-other-bg:     #1a7f3710; --badge-other-border: #1a7f37; --badge-other-shadow:#1a7f3722; --badge-other-label:#1a7f37;
+      --badge-error-bg:     #cf222e10; --badge-error-border: #cf222e; --badge-error-shadow:#cf222e22;
+      --btn-primary-hover:  #218bff;
+      --icon-delete-hover:  #cf222e12;
+      --radius:      6px;
+      --radius-lg:   10px;
+    }
+
+    /* ── Dark theme ─────────────────────────────────────── */
+    :root[data-theme="dark"] {
+      --bg0:        #0d1117;
+      --bg1:        #161b22;
+      --bg2:        #21262d;
+      --bg3:        #30363d;
+      --border:     #30363d;
+      --border2:    #3d444d;
+      --text0:      #f0f6fc;
+      --text1:      #c9d1d9;
+      --text2:      #8b949e;
+      --text3:      #484f58;
+      --accent:     #388bfd;
+      --accent-bg:  #388bfd18;
+      --green:      #3fb950;
+      --red:        #f85149;
+      --yellow:     #d29922;
+      --spinner-bg: #388bfd44;
+      --detect-btn-bg: linear-gradient(135deg, #1d2d4a, #162035);
+      --warning-bg: #d2992210;
+      --warning-border: #d2992240;
+      /* env chip */
+      --chip-prod-bg:   #ef444422; --chip-prod-text:   #f87171;
+      --chip-sand-bg:   #f59e0b22; --chip-sand-text:   #fbbf24;
+      --chip-dev-bg:    #3fb95022; --chip-dev-text:    #6ee7b7;
+      --chip-uat-bg:    #8b5cf622; --chip-uat-text:    #a78bfa;
+      --chip-custom-bg: #388bfd22; --chip-custom-text: #60a5fa;
+      /* detect badge */
+      --badge-prod-bg:      #ef444410; --badge-prod-border:  #ef4444; --badge-prod-shadow: #ef444422; --badge-prod-label: #f87171;
+      --badge-sand-bg:      #f59e0b10; --badge-sand-border:  #f59e0b; --badge-sand-shadow: #f59e0b22; --badge-sand-label: #fbbf24;
+      --badge-other-bg:     #3fb95010; --badge-other-border: #3fb950; --badge-other-shadow:#3fb95022; --badge-other-label:#6ee7b7;
+      --badge-error-bg:     #f8514910; --badge-error-border: #f85149; --badge-error-shadow:#f8514922;
+      --btn-primary-hover:  #4a9eff;
+      --icon-delete-hover:  #f8514918;
+    }
+
+    body {
+      width: 480px;
+      min-height: 300px;
+      max-height: 600px;
+      background: var(--bg0);
+      color: var(--text1);
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 13px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    .header {
+      padding: 10px 14px 9px;
+      background: var(--bg1);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-icon {
+      width: 22px; height: 22px;
+      display: block;
+      border-radius: 5px;
+    }
+    .header-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text0);
+      letter-spacing: -0.01em;
+    }
+    .header-subtitle {
+      font-size: 11px;
+      color: var(--text3);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Current env chip ──────────────────────────────── */
+    .current-env {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: var(--bg1);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      min-height: 34px;
+    }
+    .current-env-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .current-env-text {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text2);
+    }
+    .current-env-badge {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 2px 7px;
+      border-radius: 3px;
+    }
+    .no-match-text {
+      font-size: 11px;
+      color: var(--text3);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Tab nav ───────────────────────────────────────── */
+    .tab-nav {
+      display: flex;
+      background: var(--bg1);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 7px 10px;
+      border: none;
+      background: transparent;
+      color: var(--text2);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+    .tab-btn:hover { color: var(--text1); background: var(--bg2); }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    /* ── Scrollable content ────────────────────────────── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 28px;
+    }
+    .content::-webkit-scrollbar { width: 4px; }
+    .content::-webkit-scrollbar-track { background: transparent; }
+    .content::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+
+    /* ── Tab panels ────────────────────────────────────── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Rules list ────────────────────────────────────── */
+    .rules-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; user-select: none; -webkit-user-select: none; }
+
+    .empty-state {
+      padding: 32px 16px;
+      text-align: center;
+    }
+    .empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+    .empty-title { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+    .empty-desc  { font-size: 11px; color: var(--text3); }
+
+    /* ── Rule card ─────────────────────────────────────── */
+    .rule-card {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0;
+      display: block;
+      transition: border-color 0.15s;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .rule-card:hover { border-color: var(--border2); }
+    .rule-card.disabled { opacity: 0.45; }
+
+    .rule-main {
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rule-expand {
+      width: 12px;
+      color: var(--text3);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .rule-color-swatch {
+      width: 10px;
+      height: 28px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .rule-info { flex: 1; min-width: 0; }
+    .rule-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text0);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .rule-domain {
+      display: inline-block;
+      max-width: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text2);
+      background: var(--bg2);
+      padding: 1px 5px;
+      border-radius: 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .rule-match-list {
+      display: none;
+      margin: 0 10px 9px 40px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg0);
+      overflow: hidden;
+    }
+    .rule-card.expanded .rule-match-list { display: block; }
+    .rule-match-title {
+      padding: 5px 8px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      color: var(--text3);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .rule-match-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--border);
+      min-width: 0;
+    }
+    .rule-match-row:last-child { border-bottom: none; }
+    .rule-match-kind {
+      width: 68px;
+      flex-shrink: 0;
+      color: var(--text3);
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+    }
+    .rule-match-domain {
+      min-width: 0;
+      color: var(--text2);
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .env-chip {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: inline-block;
+      text-align: center;
+      min-width: 68px;
+    }
+    .env-chip.production  { background: var(--chip-prod-bg);   color: var(--chip-prod-text); }
+    .env-chip.sandbox     { background: var(--chip-sand-bg);   color: var(--chip-sand-text); }
+    .env-chip.development { background: var(--chip-dev-bg);    color: var(--chip-dev-text); }
+    .env-chip.uat         { background: var(--chip-uat-bg);    color: var(--chip-uat-text); }
+    .env-chip.custom      { background: var(--chip-custom-bg); color: var(--chip-custom-text); }
+
+    .rule-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .icon-btn {
+      width: 26px; height: 26px;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      transition: all 0.12s;
+    }
+    .icon-btn:hover { background: var(--bg3); color: var(--text1); }
+    .icon-btn.delete:hover { background: var(--icon-delete-hover); color: var(--red); }
+    .icon-btn.toggle-on  { color: var(--green); }
+    .icon-btn.toggle-off { color: var(--text3); }
+
+    /* ── Add / Edit form ───────────────────────────────── */
+    .form-section {
+      padding: 10px 12px;
+    }
+    .form-row {
+      margin-bottom: 8px;
+    }
+    .form-row label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text2);
+      margin-bottom: 3px;
+      letter-spacing: 0.02em;
+    }
+    .form-row input[type="text"],
+    .form-row select {
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text0);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-row input[type="text"]:focus,
+    .form-row select:focus {
+      border-color: var(--accent);
+    }
+    .form-row input[type="text"]::placeholder { color: var(--text3); }
+    .form-row select option { background: var(--bg2); }
+
+    .form-row-inline {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .form-row-inline .form-row { flex: 1; margin-bottom: 0; }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .color-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    input[type="color"] {
+      width: 32px; height: 28px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg2);
+      cursor: pointer;
+      padding: 2px;
+    }
+    .color-hex-input {
+      width: 82px !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 11px !important;
+      text-transform: uppercase;
+    }
+
+    .preset-colors {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .preset-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.12s;
+      flex-shrink: 0;
+    }
+    .preset-dot:hover { transform: scale(1.2); }
+    .preset-dot.selected { border-color: var(--text0); }
+
+    .form-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .btn {
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: var(--btn-primary-hover); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text2);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg2); color: var(--text1); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Settings panel ────────────────────────────────── */
+    .settings-section {
+      padding: 12px;
+    }
+    .settings-group {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .settings-group-title {
+      padding: 6px 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text3);
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-item:last-child { border-bottom: none; }
+    .settings-item-label {
+      font-size: 12px;
+      color: var(--text1);
+    }
+    .settings-item-desc {
+      font-size: 10px;
+      color: var(--text3);
+      margin-top: 1px;
+    }
+
+    /* Range slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 90px;
+      height: 4px;
+      background: var(--bg3);
+      border-radius: 2px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    .range-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text2);
+      min-width: 28px;
+      text-align: right;
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 34px; height: 18px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg3);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 12px; height: 12px;
+      left: 3px; top: 3px;
+      background: var(--text2);
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); }
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(16px);
+      background: #fff;
+    }
+
+    /* ── Divider ───────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 12px;
+    }
+
+    /* ── Edit mode highlight ───────────────────────────── */
+    .rule-card.editing {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    /* ── Inline toast ──────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 10px; right: 10px;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--text1);
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: all 0.2s;
+      pointer-events: none;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    .footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      padding: 6px 14px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      background: var(--bg1);
+      z-index: 10;
+    }
+    .footer-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text3);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Add rule section header ───────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px 4px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    .add-rule-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: var(--accent-bg);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .add-rule-btn:hover { background: var(--accent); color: #fff; }
+
+    /* ── Drag handle ───────────────────────────────────── */
+    .drag-handle {
+      color: var(--text3);
+      cursor: grab;
+      font-size: 12px;
+      padding: 0 2px;
+      user-select: none;
+      flex-shrink: 0;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+    .drag-handle:active { cursor: grabbing; }
+
+    /* ── Drag states ───────────────────────────────────── */
+    .rule-card.dragging {
+      opacity: 0.35;
+      border-style: dashed;
+    }
+    .rule-card.drag-over {
+      border-top: 2px solid var(--accent);
+      margin-top: -2px;
+    }
+
+    /* ── Detect panel ──────────────────────────────────── */
+    .detect-section { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+    .detect-intro {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--bg1); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px;
+    }
+    .detect-intro-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .detect-intro-title { font-size: 12px; font-weight: 600; color: var(--text0); margin-bottom: 2px; }
+    .detect-intro-desc  { font-size: 11px; color: var(--text3); line-height: 1.4; }
+
+    .btn-detect-run {
+      width: 100%; padding: 9px;
+      background: var(--detect-btn-bg);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--accent);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+    .btn-detect-run:hover { background: var(--accent); color: #fff; }
+    .btn-detect-run:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    .btn-detect-run.loading { opacity: 0.7; pointer-events: none; }
+
+    .detect-spinner {
+      width: 13px; height: 13px;
+      border: 2px solid var(--spinner-bg);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .btn-detect-run.loading .detect-spinner { display: block; }
+    .btn-detect-run.loading #detectBtnIcon { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .detect-result-badge {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      animation: fadeUp 0.25s ease;
+    }
+    .detect-badge-top { display: flex; align-items: center; gap: 8px; }
+    .detect-badge-icon { font-size: 20px; line-height: 1; }
+    .detect-badge-label { font-size: 16px; font-weight: 700; }
+    .detect-source-tag {
+      margin-left: auto; font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 2px 6px; border-radius: 3px;
+      background: var(--bg3); color: var(--text3);
+      border: 1px solid var(--border);
+    }
+
+    .detect-result-badge.is-production {
+      background: var(--badge-prod-bg); border-color: var(--badge-prod-border);
+      box-shadow: 0 0 16px var(--badge-prod-shadow);
+    }
+    .detect-result-badge.is-production .detect-badge-label { color: var(--badge-prod-label); }
+    .detect-result-badge.is-sandbox {
+      background: var(--badge-sand-bg); border-color: var(--badge-sand-border);
+      box-shadow: 0 0 16px var(--badge-sand-shadow);
+    }
+    .detect-result-badge.is-sandbox .detect-badge-label { color: var(--badge-sand-label); }
+    .detect-result-badge.is-other {
+      background: var(--badge-other-bg); border-color: var(--badge-other-border);
+      box-shadow: 0 0 16px var(--badge-other-shadow);
+    }
+    .detect-result-badge.is-other .detect-badge-label { color: var(--badge-other-label); }
+    .detect-result-badge.is-error {
+      background: var(--badge-error-bg); border-color: var(--badge-error-border);
+      box-shadow: 0 0 16px var(--badge-error-shadow);
+    }
+    .detect-result-badge.is-error .detect-badge-label { color: var(--red); }
+
+    .detect-detail-grid {
+      background: var(--bg1); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .detect-detail-row {
+      display: flex; align-items: flex-start;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    .detect-detail-row:last-child { border-bottom: none; }
+    .detect-detail-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      min-width: 80px; padding-top: 1px; flex-shrink: 0;
+    }
+    .detect-detail-val {
+      font-size: 11px; color: var(--text1);
+      word-break: break-all; flex: 1;
+    }
+    .detect-detail-val.mono {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    }
+    .detect-detail-val.bold { font-weight: 600; color: var(--text0); }
+
+    .detect-warning {
+      background: var(--warning-bg); border: 1px solid var(--warning-border);
+      border-radius: var(--radius); padding: 8px 10px;
+      font-size: 11px; color: var(--yellow);
+      display: flex; gap: 6px; align-items: flex-start;
+    }
+
+    .detect-actions {
+      background: var(--bg1); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px;
+    }
+    .detect-actions-title {
+      font-size: 11px; font-weight: 600; color: var(--text2);
+      margin-bottom: 8px; letter-spacing: 0.02em;
+    }
+    .detect-action-row { display: flex; gap: 6px; align-items: center; }
+    .detect-action-row input[type="text"] {
+      flex: 1; padding: 6px 8px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text0);
+      font-family: 'DM Sans', sans-serif; font-size: 12px; outline: none;
+    }
+    .detect-action-row input[type="text"]:focus { border-color: var(--accent); }
+
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <img class="logo-icon" src="icons/icon48.png" alt="" />
+    <div>
+      <div class="header-title" data-i18n="appName">Salesforce Env Guard</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="header-subtitle" id="ruleCount">0 rules</span>
+  </div>
+</div>
+
+<!-- Current env indicator -->
+<div class="current-env" id="currentEnvBar">
+  <span class="no-match-text" data-i18n="noMatch">⊘ 当前页面无匹配规则</span>
+</div>
+
+<!-- Tab nav -->
+<div class="tab-nav">
+  <button class="tab-btn active" data-tab="rules" data-i18n="tabRules">规则列表</button>
+  <button class="tab-btn" data-tab="add" data-i18n="tabAdd">添加规则</button>
+  <button class="tab-btn" data-tab="settings" data-i18n="tabSettings">设置</button>
+  <button class="tab-btn" data-tab="detect" data-i18n="tabDetect">检测</button>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ── Rules tab ── -->
+  <div class="tab-panel active" id="tab-rules">
+    <div class="rules-list" id="rulesList">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title" data-i18n="emptyTitle">暂无规则</div>
+        <div class="empty-desc" data-i18n="emptyDesc">点击「添加规则」创建第一条规则</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Add/Edit tab ── -->
+  <div class="tab-panel" id="tab-add">
+    <div class="form-section">
+      <div id="formTitle" style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;" data-i18n="formTitleNew">新建规则</div>
+
+      <div class="form-row">
+        <label><span data-i18n="labelDomain">Domain</span> <span style="color:var(--text3);font-weight:400" data-i18n="domainHint">（Org 的规范化域名）</span></label>
+        <input type="text" id="fPattern" data-i18n-placeholder="domainPlaceholder" placeholder="例：company.my.salesforce.com 或 test--uat.sandbox.my.sfcrmproducts.cn" />
+      </div>
+
+      <div class="form-row-inline">
+        <div class="form-row">
+          <label data-i18n="labelEnvType">环境类型</label>
+          <select id="fEnvType">
+            <option value="production">Production</option>
+            <option value="sandbox">Sandbox</option>
+            <option value="development">Development</option>
+            <option value="uat">UAT</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label><span data-i18n="labelLabel">Label</span> <span style="color:var(--text3);font-weight:400" data-i18n="labelHint">（备注）</span></label>
+          <input type="text" id="fLabel" data-i18n-placeholder="labelPlaceholder" placeholder="例：China Prod" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label data-i18n="labelColor">边框颜色</label>
+        <div class="color-row">
+          <div class="color-input-wrap">
+            <input type="color" id="fColorPicker" value="#ef4444" />
+            <input type="text" id="fColorHex" class="color-hex-input" value="#EF4444" maxlength="7" />
+          </div>
+          <div class="preset-colors" id="presetColors"></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" id="saveRuleBtn" data-i18n="btnSaveRule">保存规则</button>
+        <button class="btn btn-ghost" id="cancelEditBtn" style="display:none" data-i18n="btnCancel">取消</button>
+        <button class="btn btn-ghost" id="resetFormBtn" data-i18n="btnReset">重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Settings tab ── -->
+  <div class="tab-panel" id="tab-settings">
+    <div class="settings-section">
+      <div class="settings-group">
+        <div class="settings-group-title" data-i18n="settingsDisplay">显示设置</div>
+
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label" data-i18n="settingsBorderWidth">边框宽度</div>
+            <div class="settings-item-desc" data-i18n="settingsBorderDesc">页面四周边框的粗细</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="range" id="sBorderWidth" min="2" max="20" value="6" />
+            <span class="range-value" id="sBorderWidthVal">4px</span>
+          </div>
+        </div>
+
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label" data-i18n="settingsShowLabel">显示顶部标签</div>
+            <div class="settings-item-desc" data-i18n="settingsShowLabelDesc">页面顶部的环境名称标签</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="sShowLabel" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label" data-i18n="settingsTheme">主题模式</div>
+            <div class="settings-item-desc" data-i18n="settingsThemeDesc">深色 / 浅色界面切换</div>
+          </div>
+          <select id="themeSelect" style="padding:3px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text1);font-size:11px;">
+            <option value="light">☀️ 浅色</option>
+            <option value="dark">🌙 深色</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title" data-i18n="settingsData">数据管理</div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label" data-i18n="settingsClearRules">清空所有规则</div>
+            <div class="settings-item-desc" data-i18n="settingsClearDesc">移除全部自定义规则</div>
+          </div>
+          <button class="btn btn-ghost" id="resetDefaultBtn" style="font-size:11px;padding:4px 8px;" data-i18n="btnClear">清空</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title" data-i18n="settingsLang">界面语言</div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-desc" data-i18n="settingsLangDesc">切换中文 / English</div>
+          </div>
+          <select id="langSelect" style="padding:3px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text1);font-size:11px;">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Detect tab ── -->
+  <div class="tab-panel" id="tab-detect">
+    <div class="detect-section">
+
+      <div class="detect-intro">
+        <span class="detect-intro-icon">🔬</span>
+        <div>
+          <div class="detect-intro-title" data-i18n="detectIntroTitle">自动检测当前 Org 环境</div>
+          <div class="detect-intro-desc" data-i18n="detectIntroDesc">通过 Salesforce API 精确判断是否为生产环境，并可一键创建对应规则</div>
+        </div>
+      </div>
+
+      <button class="btn btn-detect-run" id="detectRunBtn">
+        <span id="detectBtnIcon">⚡</span>
+        <span id="detectBtnText" data-i18n="detectBtnStart">开始检测</span>
+      </button>
+
+      <!-- Result card (hidden until detect runs) -->
+      <div id="detectResult" style="display:none">
+
+        <!-- Env badge -->
+        <div class="detect-result-badge" id="detectBadge">
+          <div class="detect-badge-top">
+            <span class="detect-badge-icon" id="detectBadgeIcon"></span>
+            <span class="detect-badge-label" id="detectBadgeLabel"></span>
+            <span class="detect-source-tag" id="detectSourceTag"></span>
+          </div>
+        </div>
+
+        <!-- Detail rows -->
+        <div class="detect-detail-grid" id="detectDetailGrid"></div>
+
+        <!-- Warning -->
+        <div class="detect-warning" id="detectWarning" style="display:none"></div>
+
+        <!-- Action: create rule from detection -->
+        <div class="detect-actions" id="detectActions" style="display:none">
+          <div class="detect-actions-title" data-i18n="detectCreateTitle">根据检测结果创建规则</div>
+          <div class="detect-action-row">
+            <input type="text" id="detectRuleLabel" data-i18n-placeholder="detectCreatePlaceholder" placeholder="规则备注（例：China Production）" />
+            <button class="btn btn-primary" id="detectCreateRuleBtn" data-i18n="detectCreateBtn">＋ 创建规则</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="footer-text"> 🪖 Design by Kyrie Zhao 🐾 👾 🎲</span>
+  </div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="i18n.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
