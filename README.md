@@ -52,11 +52,13 @@ Salesforce Env Guard 通过**强视觉提示**解决这个问题：
 
 ### Chrome Web Store
 
-> 即将上架
+[![Available in Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-🛡️%20Salesforce%20Env%20Guard-blue)](https://chromewebstore.google.com/detail/salesforce-env-guard/idnjnmjplonafaldpomldpkmbppfcmgl)
+
+> [**立即安装**](https://chromewebstore.google.com/detail/salesforce-env-guard/idnjnmjplonafaldpomldpkmbppfcmgl)
 
 ### 开发者模式
 
-1. `git clone https://github.com/kyriezhao/salesforce-env-guard.git`
+1. `git clone https://github.com/BeBetter857/salesforce-env-guard.git`
 2. 打开 Chrome，访问 `chrome://extensions/`
 3. 开启右上角「开发者模式」
 4. 点击「加载已解压的扩展程序」，选择项目目录
@@ -88,5 +90,5 @@ MIT
 ---
 
 <p align="center">
-  🦊 Design by <a href="https://github.com/kyriezhao">Kyrie Zhao</a> 🐾
+  🦊 Design by <a href="https://github.com/BeBetter857">Kyrie Zhao</a> 🐾
 </p>
