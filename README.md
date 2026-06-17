@@ -1,6 +1,7 @@
 # 🛡️ Salesforce Env Guard
 
 > 为不同 Salesforce 环境页面添加彩色边框和醒目标签，彻底避免在**生产环境**上的误操作。
+> 支持 **Chrome** / **Edge** 浏览器。
 
 <p align="center">
   <img src="icons/icon128.png" width="128" alt="Salesforce Env Guard">
@@ -54,14 +55,25 @@ Salesforce Env Guard 通过**强视觉提示**解决这个问题：
 
 [![Available in Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-🛡️%20Salesforce%20Env%20Guard-blue)](https://chromewebstore.google.com/detail/salesforce-env-guard/idnjnmjplonafaldpomldpkmbppfcmgl)
 
-> [**立即安装**](https://chromewebstore.google.com/detail/salesforce-env-guard/idnjnmjplonafaldpomldpkmbppfcmgl)
+> [**Chrome 立即安装**](https://chromewebstore.google.com/detail/salesforce-env-guard/idnjnmjplonafaldpomldpkmbppfcmgl)
+
+### Edge Add-ons
+
+> 即将上架 Microsoft Edge Add-ons
 
 ### 开发者模式
 
+**Chrome:**
 1. `git clone https://github.com/BeBetter857/salesforce-env-guard.git`
 2. 打开 Chrome，访问 `chrome://extensions/`
 3. 开启右上角「开发者模式」
 4. 点击「加载已解压的扩展程序」，选择项目目录
+
+**Edge:**
+1. `git clone https://github.com/BeBetter857/salesforce-env-guard.git`
+2. 打开 Edge，访问 `edge://extensions/`
+3. 开启左下角「开发人员模式」
+4. 点击「加载解压缩的扩展」，选择项目目录
 
 ## 权限说明
 
