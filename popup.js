@@ -33,6 +33,7 @@ let rules         = [];
 let settings      = { borderWidth: 4, showLabel: true };
 let editingId     = null; // null = adding new, string = editing existing
 let currentTabUrl = null; // 当前标签页 URL，用于本地规则匹配
+let ruleSearchQuery = '';
 const expandedRuleIds = new Set();
 
 // ─────────────────────────────────────────────────────────────
@@ -114,6 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPresetColors();
   initColorPicker();
   initTabNav();
+  initRuleSearch();
   initFormEvents();
   initSettingsEvents();
   initDragDrop();
@@ -208,19 +210,63 @@ function renderCurrentEnv(rule, url) {
 function renderRules() {
   const list  = document.getElementById('rulesList');
   const empty = document.getElementById('emptyState');
+  const emptyTitle = empty.querySelector('.empty-title');
+  const emptyDesc = empty.querySelector('.empty-desc');
+  const visibleRules = filterRules(rules);
 
   // Remove existing cards (keep empty state node)
   list.querySelectorAll('.rule-card').forEach(el => el.remove());
 
   if (rules.length === 0) {
+    emptyTitle.textContent = t('emptyTitle');
+    emptyDesc.textContent = t('emptyDesc');
+    empty.style.display = '';
+    return;
+  }
+
+  if (visibleRules.length === 0) {
+    emptyTitle.textContent = t('emptySearchTitle');
+    emptyDesc.textContent = t('emptySearchDesc');
     empty.style.display = '';
     return;
   }
   empty.style.display = 'none';
 
-  rules.forEach(rule => {
+  visibleRules.forEach(rule => {
     const card = buildRuleCard(rule);
     list.appendChild(card);
+  });
+}
+
+function initRuleSearch() {
+  const input = document.getElementById('ruleSearchInput');
+  input.addEventListener('input', e => {
+    ruleSearchQuery = e.target.value.trim().toLowerCase();
+    renderRules();
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || !input.value) return;
+    input.value = '';
+    ruleSearchQuery = '';
+    renderRules();
+  });
+}
+
+function filterRules(ruleList) {
+  if (!ruleSearchQuery) return ruleList;
+
+  return ruleList.filter(rule => {
+    const domain = normalizeRuleDomain(rule.pattern);
+    const searchable = [
+      rule.label,
+      rule.pattern,
+      domain,
+      rule.environmentType,
+      t('envType_' + rule.environmentType),
+      rule.autoDetected ? t('autoDetected') : '',
+    ].join(' ').toLowerCase();
+
+    return searchable.includes(ruleSearchQuery);
   });
 }
 
@@ -229,6 +275,9 @@ function buildRuleCard(rule) {
   const isExpanded = expandedRuleIds.has(rule.id);
   const domain = normalizeRuleDomain(rule.pattern);
   const matchDomains = buildMatchDomains(domain);
+  const autoRuleChip = rule.autoDetected && !rule.enabled
+    ? `<span class="auto-rule-chip">${t('autoDetected')}</span>`
+    : '';
 
   card.className = `rule-card${rule.enabled ? '' : ' disabled'}${isExpanded ? ' expanded' : ''}`;
   card.dataset.id = rule.id;
@@ -236,20 +285,23 @@ function buildRuleCard(rule) {
   card.innerHTML = `
     <div class="rule-main">
       <span class="drag-handle" draggable="true" title="${t('dragHandleTitle')}">⋮⋮</span>
-      <div class="rule-expand" title="${isExpanded ? t('btnCollapse') : t('btnExpand')}">${isExpanded ? '▾' : '▸'}</div>
+      <div class="rule-expand" title="${isExpanded ? t('btnCollapse') : t('btnExpand')}">
+        ${isExpanded ? iconSvg('chevron-down') : iconSvg('chevron-right')}
+      </div>
       <div class="rule-color-swatch" style="background:${escHtml(rule.color)}"></div>
       <div class="rule-info">
         <div class="rule-label">${escHtml(rule.label || domain || '(no label)')}</div>
         <span class="rule-domain">${escHtml(domain || rule.pattern)}</span>
       </div>
+      ${autoRuleChip}
       <span class="env-chip ${rule.environmentType}">${t('envType_' + rule.environmentType)}</span>
       <div class="rule-actions">
         <button class="icon-btn toggle-btn ${rule.enabled ? 'toggle-on' : 'toggle-off'}"
                 title="${rule.enabled ? t('btnDisable') : t('btnEnable')}" data-id="${rule.id}">
-          ${rule.enabled ? '◉' : '○'}
+          ${iconSvg(rule.enabled ? 'pause' : 'play')}
         </button>
-        <button class="icon-btn edit-btn" title="${t('btnEdit')}" data-id="${rule.id}">✎</button>
-        <button class="icon-btn delete delete-btn" title="${t('btnDelete')}" data-id="${rule.id}">✕</button>
+        <button class="icon-btn edit-btn" title="${t('btnEdit')}" data-id="${rule.id}">${iconSvg('edit')}</button>
+        <button class="icon-btn delete delete-btn" title="${t('btnDelete')}" data-id="${rule.id}">${iconSvg('trash')}</button>
       </div>
     </div>
     <div class="rule-match-list">
@@ -377,7 +429,11 @@ function updateRuleCount() {
 // ─────────────────────────────────────────────────────────────
 
 function toggleRule(id) {
-  rules = rules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r);
+  rules = rules.map(r => {
+    if (r.id !== id) return r;
+    const enabled = !r.enabled;
+    return { ...r, enabled, autoDetected: enabled ? false : r.autoDetected };
+  });
   renderRules();
   updateRuleCount();
   updateCurrentEnvLocal();   // 用内存 rules 即时匹配
@@ -630,6 +686,7 @@ function initSettingsEvents() {
   document.getElementById('sShowLabel').addEventListener('change', debounceSaveSettings);
 
   document.getElementById('resetDefaultBtn').addEventListener('click', () => {
+    if (!confirm(t('confirmClearRules'))) return;
     rules = [];
     renderRules();
     updateRuleCount();
@@ -637,6 +694,12 @@ function initSettingsEvents() {
     persistRules().catch(() => {});
     showToast(t('toastRulesCleared'));
   });
+
+  document.getElementById('exportRulesBtn').addEventListener('click', exportRules);
+  document.getElementById('importRulesBtn').addEventListener('click', () => {
+    document.getElementById('importRulesInput').click();
+  });
+  document.getElementById('importRulesInput').addEventListener('change', importRulesFromFile);
 }
 
 let settingsTimer = null;
@@ -665,6 +728,97 @@ function showToast(msg) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Import / Export
+// ─────────────────────────────────────────────────────────────
+
+function exportRules() {
+  const payload = {
+    app: 'Salesforce Env Guard',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    rules,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `salesforce-env-guard-rules-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast(t('toastRulesExported'));
+}
+
+async function importRulesFromFile(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  try {
+    const parsed = JSON.parse(await file.text());
+    const imported = Array.isArray(parsed) ? parsed : parsed.rules;
+    if (!Array.isArray(imported)) throw new Error('Invalid rules file');
+
+    const result = mergeImportedRules(rules, imported);
+    rules = result.rules;
+    renderRules();
+    updateRuleCount();
+    updateCurrentEnvLocal();
+    await persistRules();
+    showToast(t('toastRulesImportedMerged', { added: result.added, skipped: result.skipped }));
+  } catch {
+    showToast(t('toastImportFailed'));
+  } finally {
+    input.value = '';
+  }
+}
+
+function mergeImportedRules(existingRules, importedRules) {
+  const merged = [...existingRules];
+  const seen = new Set(existingRules.map(rule => normalizeRulePattern(rule.pattern)));
+  let added = 0;
+  let skipped = 0;
+
+  importedRules.forEach((rule, index) => {
+    const normalized = normalizeImportedRule(rule, index);
+    if (!normalized) {
+      skipped++;
+      return;
+    }
+
+    const key = normalizeRulePattern(normalized.pattern);
+    if (seen.has(key)) {
+      skipped++;
+      return;
+    }
+
+    seen.add(key);
+    merged.push(normalized);
+    added++;
+  });
+
+  return { rules: merged, added, skipped };
+}
+
+function normalizeImportedRule(rule, index) {
+  if (!rule || !String(rule.pattern || '').trim()) return null;
+  const envType = ['production', 'sandbox', 'development', 'uat', 'custom'].includes(rule.environmentType)
+    ? rule.environmentType
+    : 'custom';
+  const fallbackColor = ENV_AUTO_COLORS[envType] || ENV_AUTO_COLORS.custom;
+  return {
+    id: String(rule.id || `rule_import_${Date.now()}_${index}`),
+    pattern: String(rule.pattern).trim(),
+    environmentType: envType,
+    color: /^#[0-9a-fA-F]{6}$/.test(rule.color || '') ? rule.color : fallbackColor,
+    label: String(rule.label || ''),
+    enabled: rule.enabled !== false,
+    autoDetected: rule.autoDetected === true,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
 // Utils
 // ─────────────────────────────────────────────────────────────
 
@@ -678,6 +832,19 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function iconSvg(name) {
+  const icons = {
+    'chevron-down': '<polyline points="6 9 12 15 18 9"></polyline>',
+    'chevron-right': '<polyline points="9 6 15 12 9 18"></polyline>',
+    play: '<polygon points="8 5 19 12 8 19 8 5"></polygon>',
+    pause: '<rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect>',
+    edit: '<path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"></path>',
+    trash: '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path>',
+    search: '<circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5 21 21"></path>',
+  };
+  return `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">${icons[name] || ''}</svg>`;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -800,7 +967,7 @@ function renderDetectResult(data) {
   }
 
   if (data.apiSource) {
-    rows.push({ key: t('detectApiMethod'), val: { page_fetch: 'Same-Origin fetch', bearer_token: 'Bearer Token' }[data.apiSource] || data.apiSource });
+    rows.push({ key: t('detectApiMethod'), val: { page_fetch: 'Same-Origin fetch', bearer: 'Bearer Token' }[data.apiSource] || data.apiSource });
   }
 
   detailGrid.innerHTML = rows.map(r => `

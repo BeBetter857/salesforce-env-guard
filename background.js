@@ -168,36 +168,79 @@ function getAutoCreatableEnv(url) {
 
 function matchRule(url, rules) {
   if (!url) return null;
-  const candidates = buildUrlMatchCandidates(url);
   const enabled = rules.filter(r => r.enabled);
-  const matched = enabled.filter(r =>
-    candidates.some(candidate => candidate.includes(normalizeRulePattern(r.pattern)))
-  );
+  const matched = enabled.filter(r => ruleMatchesUrl(r.pattern, url));
   if (!matched.length) return null;
-  matched.sort((a, b) => normalizeRulePattern(b.pattern).length - normalizeRulePattern(a.pattern).length);
+  matched.sort((a, b) => getRuleSpecificity(b.pattern) - getRuleSpecificity(a.pattern));
   return matched[0];
 }
 
 function hasMatchingRule(url, rules) {
   if (!url) return false;
-  const candidates = buildUrlMatchCandidates(url);
-  return rules.some(r =>
-    candidates.some(candidate => candidate.includes(normalizeRulePattern(r.pattern)))
-  );
+  return rules.some(r => ruleMatchesUrl(r.pattern, url));
 }
 
-function buildUrlMatchCandidates(url) {
-  const candidates = [String(url).toLowerCase()];
+function ruleMatchesUrl(pattern, url) {
+  const parsedRule = parseRulePattern(pattern);
+  const parsedUrl = parseSalesforceUrl(url);
+  if (!parsedRule || !parsedUrl) return false;
+
+  if (parsedRule.type === "host") {
+    return parsedUrl.normalizedHost === parsedRule.host;
+  }
+
+  return parsedUrl.normalizedHost === parsedRule.host
+    && pathMatchesPrefix(parsedUrl.pathname, parsedRule.pathname);
+}
+
+function parseSalesforceUrl(url) {
   try {
     const parsed = new URL(url);
     const normalizedHost = normalizeHost(parsed.hostname);
-    candidates.push(parsed.hostname.toLowerCase(), normalizedHost);
-    if (normalizedHost !== parsed.hostname) {
-      parsed.hostname = normalizedHost;
-      candidates.push(parsed.href.toLowerCase());
-    }
-  } catch {}
-  return [...new Set(candidates)];
+    return {
+      normalizedHost,
+      pathname: normalizePathname(parsed.pathname)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseRulePattern(pattern) {
+  const raw = String(pattern || "").trim().toLowerCase();
+  if (!raw) return null;
+
+  try {
+    const isUrlLike = raw.includes("://") || raw.includes("/");
+    const parsed = new URL(raw.includes("://") ? raw : "https://" + raw);
+    const normalizedHost = normalizeHost(parsed.hostname);
+    if (!isUrlLike) return { type: "host", host: normalizedHost };
+    return {
+      type: "url",
+      host: normalizedHost,
+      pathname: normalizePathname(parsed.pathname)
+    };
+  } catch {
+    return { type: "host", host: normalizeHost(raw) };
+  }
+}
+
+function normalizePathname(pathname) {
+  const path = String(pathname || "/").toLowerCase();
+  return path.startsWith("/") ? path : "/" + path;
+}
+
+function pathMatchesPrefix(actualPath, rulePath) {
+  const actual = normalizePathname(actualPath);
+  const rule = normalizePathname(rulePath);
+  if (rule === "/") return true;
+  return actual === rule || actual.startsWith(rule.endsWith("/") ? rule : rule + "/");
+}
+
+function getRuleSpecificity(pattern) {
+  const parsed = parseRulePattern(pattern);
+  if (!parsed) return 0;
+  return parsed.host.length + (parsed.type === "url" ? parsed.pathname.length : 0);
 }
 
 function normalizeRulePattern(pattern) {
@@ -216,13 +259,8 @@ function normalizeRulePattern(pattern) {
 }
 
 function extractOrgNameFromHost(normalizedHost) {
-  // 从规范化域名中提取 Org 标识名
-  // company.my.salesforce.com          → company
-  // test--uat.sandbox.my.salesforce.com → test--uat
-  // company.my.sfcrmproducts.cn         → company
-  var h = String(normalizedHost || "");
-  // 按优先级匹配后缀并剥离
-  var suffixes = [
+  const h = String(normalizedHost || "");
+  const suffixes = [
     ".sandbox.my.salesforce.com",
     ".develop.my.salesforce.com",
     ".scratch.my.salesforce.com",
@@ -230,12 +268,9 @@ function extractOrgNameFromHost(normalizedHost) {
     ".sandbox.my.sfcrmproducts.cn",
     ".my.sfcrmproducts.cn",
   ];
-  for (var i = 0; i < suffixes.length; i++) {
-    if (h.endsWith(suffixes[i])) {
-      return h.slice(0, -suffixes[i].length);
-    }
+  for (const suffix of suffixes) {
+    if (h.endsWith(suffix)) return h.slice(0, -suffix.length);
   }
-  // 兜底：直接返回域名本身
   return h;
 }
 
@@ -276,17 +311,12 @@ async function ensureRuleExistsForUrl(url, rules, tabId) {
   const autoRule = buildAutoRuleFromUrl(url);
   if (!autoRule) return rules;
 
-  // 立即保存规则（用 URL 标签），不阻塞边框推送
   const nextRules = [...rules, autoRule];
   await saveRules(nextRules);
-
-  // 异步获取 Org 名称并更新规则标签（不阻塞返回）
   enrichRuleLabel(autoRule.id, url, tabId);
-
   return nextRules;
 }
 
-/** 后台异步获取 Org 名称，更新自动创建规则的标签 */
 async function enrichRuleLabel(ruleId, url, tabId) {
   try {
     const sfHost = await getSfHost(url);
@@ -298,7 +328,6 @@ async function enrichRuleLabel(ruleId, url, tabId) {
     const orgInfo = await queryOrgInfo(tabId, instanceUrl, sessionKey);
     if (!orgInfo?.record?.Name) return;
 
-    // 更新 storage 中的规则标签
     const data = await chrome.storage.sync.get("orgRules");
     const rules = data.orgRules || [];
     const idx = rules.findIndex(r => r.id === ruleId);
@@ -307,7 +336,7 @@ async function enrichRuleLabel(ruleId, url, tabId) {
       await chrome.storage.sync.set({ orgRules: rules });
     }
   } catch {
-    // 静默失败——URL 标签已足够
+    // URL-derived labels are good enough when enrichment cannot run.
   }
 }
 
@@ -350,34 +379,36 @@ function getSfHost(tabUrl, cookieStoreId) {
 
     chrome.cookies.get(
       { url: tabUrl, name: "sid", storeId: cookieStoreId },
-      cookie => {
+      async cookie => {
         if (!cookie) { resolve(null); return; }
 
         const orgId = cookie.value.split("!")[0];
-        let resolved = false;
+        const results = await Promise.allSettled(
+          SF_COOKIE_DOMAINS.map(domain => getSidCookiesForDomain(domain, cookieStoreId))
+        );
 
-        SF_COOKIE_DOMAINS.forEach(domain => {
-          chrome.cookies.getAll(
-            { name: "sid", domain, secure: true, storeId: cookieStoreId },
-            cookies => {
-              if (resolved) return;
-              // 找到 orgId 匹配的 cookie（排除 help.salesforce.com）
-              const match = cookies.find(c =>
-                c.value.startsWith(orgId + "!") && c.domain !== "help.salesforce.com"
-              );
-              if (match) {
-                resolved = true;
-                resolve(match.domain);
-              }
-            }
+        for (const result of results) {
+          if (result.status !== "fulfilled") continue;
+          const match = result.value.find(c =>
+            c.value.startsWith(orgId + "!") && normalizeHost(c.domain) !== "help.salesforce.com"
           );
-        });
+          if (match) {
+            resolve(normalizeHost(match.domain));
+            return;
+          }
+        }
 
-        // 300ms 后还没找到就用当前域
-        setTimeout(() => {
-          if (!resolved) resolve(normalizeHost(currentDomain));
-        }, 300);
+        resolve(normalizeHost(currentDomain));
       }
+    );
+  });
+}
+
+function getSidCookiesForDomain(domain, cookieStoreId) {
+  return new Promise(resolve => {
+    chrome.cookies.getAll(
+      { name: "sid", domain, secure: true, storeId: cookieStoreId },
+      cookies => resolve(cookies || [])
     );
   });
 }
@@ -605,7 +636,6 @@ async function refreshAllSFTabs() {
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url) {
-    // 仅在用户主动导航到新 Org 时自动创建规则
     try {
       let rules = await getRules();
       rules = await ensureRuleExistsForUrl(tab.url, rules, tabId);

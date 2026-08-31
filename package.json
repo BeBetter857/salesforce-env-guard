@@ -1,0 +1,8 @@
+{
+  "name": "salesforce-env-guard",
+  "version": "1.0.3",
+  "private": true,
+  "scripts": {
+    "test": "node tests/domain-behavior.test.js"
+  }
+}

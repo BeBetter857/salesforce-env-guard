@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <title>Salesforce Env Guard</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-
     /* ── Reset & Base ─────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -85,11 +83,10 @@
 
     body {
       width: 480px;
-      min-height: 300px;
       max-height: 600px;
       background: var(--bg0);
       color: var(--text1);
-      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 13px;
       overflow: hidden;
       display: flex;
@@ -182,7 +179,7 @@
       border: none;
       background: transparent;
       color: var(--text2);
-      font-family: 'DM Sans', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
@@ -199,10 +196,10 @@
 
     /* ── Scrollable content ────────────────────────────── */
     .content {
-      flex: 1;
+      flex: 0 1 auto;
+      max-height: 470px;
       overflow-y: auto;
       overflow-x: hidden;
-      padding-bottom: 28px;
     }
     .content::-webkit-scrollbar { width: 4px; }
     .content::-webkit-scrollbar-track { background: transparent; }
@@ -213,6 +210,34 @@
     .tab-panel.active { display: block; }
 
     /* ── Rules list ────────────────────────────────────── */
+    .rules-toolbar {
+      padding: 8px 8px 4px;
+      background: var(--bg0);
+    }
+    .rule-search {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .rule-search .ui-icon {
+      color: var(--text3);
+      flex-shrink: 0;
+    }
+    .rule-search-input {
+      width: 100%;
+      min-width: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text0);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 12px;
+    }
+    .rule-search-input::placeholder { color: var(--text3); }
     .rules-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; user-select: none; -webkit-user-select: none; }
 
     .empty-state {
@@ -239,7 +264,6 @@
     }
     .rule-card:hover { border-color: var(--border2); }
     .rule-card.disabled { opacity: 0.45; }
-
     .rule-main {
       padding: 8px 10px;
       display: flex;
@@ -344,6 +368,18 @@
     .env-chip.development { background: var(--chip-dev-bg);    color: var(--chip-dev-text); }
     .env-chip.uat         { background: var(--chip-uat-bg);    color: var(--chip-uat-text); }
     .env-chip.custom      { background: var(--chip-custom-bg); color: var(--chip-custom-text); }
+    .auto-rule-chip {
+      padding: 1px 5px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: var(--accent-bg);
+      color: var(--accent);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
 
     .rule-actions {
       display: flex;
@@ -366,7 +402,16 @@
     .icon-btn.delete:hover { background: var(--icon-delete-hover); color: var(--red); }
     .icon-btn.toggle-on  { color: var(--green); }
     .icon-btn.toggle-off { color: var(--text3); }
-
+    .ui-icon {
+      width: 14px;
+      height: 14px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     /* ── Add / Edit form ───────────────────────────────── */
     .form-section {
       padding: 10px 12px;
@@ -390,7 +435,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text0);
-      font-family: 'DM Sans', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 12px;
       outline: none;
       transition: border-color 0.15s;
@@ -460,7 +505,7 @@
       padding: 6px 14px;
       border-radius: var(--radius);
       border: 1px solid transparent;
-      font-family: 'DM Sans', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
@@ -510,6 +555,12 @@
       border-bottom: 1px solid var(--border);
     }
     .settings-item:last-child { border-bottom: none; }
+    .settings-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
     .settings-item-label {
       font-size: 12px;
       color: var(--text1);
@@ -607,16 +658,12 @@
 
     /* ── Footer ─────────────────────────────────────────── */
     .footer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
       width: 100%;
-      padding: 6px 14px;
+      padding: 5px 14px;
       text-align: center;
       border-top: 1px solid var(--border);
       background: var(--bg1);
-      z-index: 10;
+      flex-shrink: 0;
     }
     .footer-text {
       font-family: 'JetBrains Mono', monospace;
@@ -697,7 +744,7 @@
       border: 1px solid var(--accent);
       border-radius: var(--radius);
       color: var(--accent);
-      font-family: 'DM Sans', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 13px; font-weight: 600;
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
       transition: all 0.15s;
@@ -803,7 +850,7 @@
       flex: 1; padding: 6px 8px;
       background: var(--bg2); border: 1px solid var(--border);
       border-radius: var(--radius); color: var(--text0);
-      font-family: 'DM Sans', sans-serif; font-size: 12px; outline: none;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; outline: none;
     }
     .detect-action-row input[type="text"]:focus { border-color: var(--accent); }
 
@@ -842,6 +889,15 @@
 
   <!-- ── Rules tab ── -->
   <div class="tab-panel active" id="tab-rules">
+    <div class="rules-toolbar">
+      <label class="rule-search" for="ruleSearchInput">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="M16.5 16.5 21 21"></path>
+        </svg>
+        <input class="rule-search-input" type="search" id="ruleSearchInput" data-i18n-placeholder="ruleSearchPlaceholder" placeholder="搜索规则" />
+      </label>
+    </div>
     <div class="rules-list" id="rulesList">
       <div class="empty-state" id="emptyState">
         <div class="empty-icon">📋</div>
@@ -931,8 +987,8 @@
             <div class="settings-item-desc" data-i18n="settingsThemeDesc">深色 / 浅色界面切换</div>
           </div>
           <select id="themeSelect" style="padding:3px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text1);font-size:11px;">
-            <option value="light">☀️ 浅色</option>
-            <option value="dark">🌙 深色</option>
+            <option value="light" data-i18n="themeLight">浅色</option>
+            <option value="dark" data-i18n="themeDark">深色</option>
           </select>
         </div>
       </div>
@@ -946,17 +1002,29 @@
           </div>
           <button class="btn btn-ghost" id="resetDefaultBtn" style="font-size:11px;padding:4px 8px;" data-i18n="btnClear">清空</button>
         </div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-item-label" data-i18n="settingsTransferRules">导入 / 导出规则</div>
+            <div class="settings-item-desc" data-i18n="settingsTransferDesc">备份或迁移规则配置</div>
+          </div>
+          <div class="settings-actions">
+            <button class="btn btn-ghost" id="importRulesBtn" style="font-size:11px;padding:4px 8px;" data-i18n="btnImport">导入</button>
+            <button class="btn btn-ghost" id="exportRulesBtn" style="font-size:11px;padding:4px 8px;" data-i18n="btnExport">导出</button>
+            <input type="file" id="importRulesInput" accept="application/json,.json" style="display:none" />
+          </div>
+        </div>
       </div>
 
       <div class="settings-group">
         <div class="settings-group-title" data-i18n="settingsLang">界面语言</div>
         <div class="settings-item">
           <div>
-            <div class="settings-item-desc" data-i18n="settingsLangDesc">切换中文 / English</div>
+            <div class="settings-item-desc" data-i18n="settingsLangDesc">切换中文 / English / 日本語</div>
           </div>
           <select id="langSelect" style="padding:3px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text1);font-size:11px;">
             <option value="zh">中文</option>
             <option value="en">English</option>
+            <option value="ja">日本語</option>
           </select>
         </div>
       </div>
