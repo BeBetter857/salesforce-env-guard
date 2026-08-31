@@ -3,6 +3,8 @@
   "version": "1.0.4",
   "private": true,
   "scripts": {
-    "test": "node tests/domain-behavior.test.js"
+    "test": "node tests/domain-behavior.test.js",
+    "package:chrome": "mkdir -p dist && zip -r dist/SalesforceEnvGuard-${npm_package_version}-chrome.zip manifest.json background.js content.js popup.html popup.js i18n.js icons",
+    "package:edge": "mkdir -p dist && zip -r dist/SalesforceEnvGuard-${npm_package_version}-edge.zip manifest.json background.js content.js popup.html popup.js i18n.js icons"
   }
 }

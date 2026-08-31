@@ -1,6 +1,7 @@
 # 🛡️ Salesforce Env Guard
 
 > 为不同 Salesforce 环境页面添加彩色边框和醒目标签，彻底避免在**生产环境**上的误操作。
+> 支持 **Chrome / Edge** 浏览器。
 
 <p align="center">
   <img src="icons/icon128.png" width="128" alt="Salesforce Env Guard">
@@ -33,7 +34,7 @@ Salesforce Env Guard 通过**强视觉提示**解决这个问题：
 | 🌐 **全域名覆盖** | 兼容 salesforce.com、force.com、cloudforce.com、sfcrmproducts.cn（中国站）等 |
 | 🌗 **深色/浅色主题** | 跟随偏好自动切换 |
 | 🌍 **多语言界面** | 完整支持中文 / English / 日本語界面，并按浏览器地区自动选择默认语言 |
-| ☁️ **跨设备同步** | 规则通过 Chrome Storage Sync 自动同步 |
+| ☁️ **跨设备同步** | 规则通过浏览器 Storage Sync 自动同步 |
 
 ## 使用
 
@@ -61,14 +62,34 @@ Salesforce Env Guard 通过**强视觉提示**解决这个问题：
 
 [![Available in Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-🛡️%20Salesforce%20Env%20Guard-blue)](https://chromewebstore.google.com/detail/salesforce-env-guard/idnjnmjplonafaldpomldpkmbppfcmgl)
 
-> [**立即安装**](https://chromewebstore.google.com/detail/salesforce-env-guard/idnjnmjplonafaldpomldpkmbppfcmgl)
+> [**Chrome 立即安装**](https://chromewebstore.google.com/detail/salesforce-env-guard/idnjnmjplonafaldpomldpkmbppfcmgl)
+
+### Edge Add-ons
+
+> Edge 版本可使用同一套 Manifest V3 代码发布到 Microsoft Edge Add-ons。
 
 ### 开发者模式
 
+**Chrome:**
 1. `git clone https://github.com/BeBetter857/salesforce-env-guard.git`
 2. 打开 Chrome，访问 `chrome://extensions/`
 3. 开启右上角「开发者模式」
 4. 点击「加载已解压的扩展程序」，选择项目目录
+
+**Edge:**
+1. `git clone https://github.com/BeBetter857/salesforce-env-guard.git`
+2. 打开 Edge，访问 `edge://extensions/`
+3. 开启左下角「开发人员模式」
+4. 点击「加载解压缩的扩展」，选择项目目录
+
+## 打包发布
+
+```bash
+npm run package:chrome
+npm run package:edge
+```
+
+Chrome 和 Edge 上传包都会生成在 `dist/` 目录中，且 `manifest.json` 位于 zip 根目录。
 
 ## 权限说明
 
@@ -85,7 +106,7 @@ Salesforce Env Guard 通过**强视觉提示**解决这个问题：
 
 ## 技术栈
 
-- **Manifest V3** — Chrome 扩展最新标准
+- **Manifest V3** — Chromium 扩展标准，兼容 Chrome / Edge
 - **Service Worker** — 后台任务架构
 - **Content Script** — 边框 Overlay 注入
 - **Salesforce REST API** — Org 环境精确检测

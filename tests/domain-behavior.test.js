@@ -258,3 +258,17 @@ test('README documents the current popup and auto-discovery behavior', () => {
   assert.match(readme, /规则搜索/);
   assert.match(readme, /导入 \/ 导出/);
 });
+
+test('project documents and packages the Edge release target', () => {
+  const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+  const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+  const gitignore = fs.readFileSync(path.join(__dirname, '..', '.gitignore'), 'utf8');
+
+  assert.match(readme, /Chrome \/ Edge/);
+  assert.match(readme, /Edge Add-ons/);
+  assert.match(readme, /edge:\/\/extensions\//);
+  assert.match(readme, /npm run package:edge/);
+  assert.match(packageJson.scripts['package:edge'], /edge\.zip/);
+  assert.match(packageJson.scripts['package:chrome'], /chrome\.zip/);
+  assert.match(gitignore, /^dist\/$/m);
+});
