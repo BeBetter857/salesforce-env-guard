@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Salesforce Env Guard",
-  "version": "1.0.4",
-  "description": "为不同 Salesforce 环境显示彩色边框，防止误操作生产环境",
+  "version": "1.0.5",
+  "description": "Identify Salesforce environments with customizable visual indicators to help prevent accidental changes in the wrong org.",
   "permissions": [
     "storage",
     "tabs",
